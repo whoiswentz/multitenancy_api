@@ -1,17 +1,17 @@
 package main
 
 import (
-	"mongodb-test/db"
+	"fmt"
+	"mongodb-test/validator"
 )
 
 func main() {
-	anon := db.New("mongodb://localhost:27017")
-	sec := db.New("mongodb://localhost:27018")
-	noc := db.New("mongodb://localhost:27019")
+	v := validator.New()
 
-	cancel := anon.Connect()
-	cancel = sec.Connect()
-	cancel = noc.Connect()
-	
-	cancel()
+	b := v.Encrypt([]byte("asdasdasd"))
+	fmt.Printf("Ciphertext = %x\n", b)
+
+	p := v.Decrypt([]byte(fmt.Sprintf("%x", b)))
+	fmt.Printf("Decrypted Plaintext = %s\n", p)
+
 }
