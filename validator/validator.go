@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 type Validator struct {
@@ -17,9 +18,7 @@ type Validator struct {
 }
 
 func New() *Validator {
-	return &Validator{
-		nonce: make([]byte, 12),
-	}
+	return &Validator{}
 }
 
 func (v *Validator) Encrypt(data []byte) []byte {
@@ -39,8 +38,7 @@ func (v *Validator) Encrypt(data []byte) []byte {
 		log.Fatalln(err.Error())
 	}
 
-	nonce := v.nonce
-	fmt.Printf("Nonce E = %x\n", v.nonce)
+	nonce := make([]byte, 12)
 
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		log.Fatalln(err.Error())
@@ -52,8 +50,9 @@ func (v *Validator) Encrypt(data []byte) []byte {
 	}
 
 	e := aesgcm.Seal(nil, nonce, data, nil)
+	token := fmt.Sprintf("%x:%x", e, nonce)
 
-	return e
+	return []byte(token)
 }
 
 func (v *Validator) Decrypt(data []byte) []byte {
@@ -78,9 +77,12 @@ func (v *Validator) Decrypt(data []byte) []byte {
 		log.Fatalln(err.Error())
 	}
 
-	nonce, _ := hex.DecodeString(fmt.Sprintf("%x", v.nonce))
-	fmt.Printf("Nonce D = %x\n", v.nonce)
-	p, err := aesgcm.Open(nil, nonce, data, nil)
+	s := strings.Split(fmt.Sprintf("%s", data), ":")
+
+	token, _ := hex.DecodeString(s[0])
+	nonce, _ := hex.DecodeString(s[1])
+
+	p, err := aesgcm.Open(nil, nonce, token, nil)
 	if err != nil {
 		panic(err.Error())
 	}
