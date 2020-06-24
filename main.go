@@ -1,17 +1,46 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"mongodb-test/validator"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
-	v := validator.New()
+	router := mux.NewRouter()
 
-	b := v.Encrypt([]byte("asdasdasd"))
-	fmt.Printf("Ciphertext = %x\n", b)
+	server := &http.Server{
+		Handler:      router,
+		Addr:         "127.0.0.1:8000",
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
 
-	p := v.Decrypt([]byte(fmt.Sprintf("%x", b)))
-	fmt.Printf("Decrypted Plaintext = %s\n", p)
+	go func() {
+		fmt.Printf("server running: %s\n", server.Addr)
+		if err := server.ListenAndServe(); err != nil {
+			log.Fatalln(err.Error())
+		}
+	}()
 
+	exit := make(chan os.Signal, 1)
+	signal.Notify(exit, os.Interrupt)
+	<-exit
+
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		15*time.Second)
+	defer cancel()
+
+	server.Shutdown(ctx)
+
+	log.Println("shuting down")
+	os.Exit(0)
 }
