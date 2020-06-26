@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"mongodb-test/controllers"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,15 +12,30 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type RoutesConfig struct {
+	Path        string
+	HandlerFunc func(w http.ResponseWriter, r *http.Request)
+	Method      []string
+}
+
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime)
 
 	router := mux.NewRouter()
-	router.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
-		h := r.Host
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(h))
-	}).Methods(http.MethodGet)
+
+	routes := []RoutesConfig{{
+		Path:        "/login",
+		HandlerFunc: controllers.LogiController,
+		Method:      []string{http.MethodGet},
+	}}
+
+	for _, r := range routes {
+		log.Printf("mounting %s - %s", r.Path, r.Method)
+		go router.HandleFunc(
+			r.Path,
+			r.HandlerFunc,
+		).Methods(r.Method...)
+	}
 
 	server := &http.Server{
 		Handler:      router,
@@ -47,7 +63,6 @@ func main() {
 	defer cancel()
 
 	server.Shutdown(ctx)
-
 	log.Println("shuting down...")
 	os.Exit(0)
 }
