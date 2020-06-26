@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -13,18 +12,26 @@ import (
 )
 
 func main() {
+	log.SetFlags(log.Ldate | log.Ltime)
+
 	router := mux.NewRouter()
+	router.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
+		h := r.Host
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(h))
+	}).Methods(http.MethodGet)
 
 	server := &http.Server{
 		Handler:      router,
-		Addr:         "127.0.0.1:8000",
+		Addr:         "127.0.0.1:8080",
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
 
 	go func() {
-		fmt.Printf("server running: %s\n", server.Addr)
+		log.Println("starting the application...")
+		log.Printf("server running: %s\n", server.Addr)
 		if err := server.ListenAndServe(); err != nil {
 			log.Fatalln(err.Error())
 		}
@@ -41,6 +48,6 @@ func main() {
 
 	server.Shutdown(ctx)
 
-	log.Println("shuting down")
+	log.Println("shuting down...")
 	os.Exit(0)
 }
