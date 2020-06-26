@@ -23,19 +23,20 @@ func main() {
 
 	router := mux.NewRouter()
 
-	routes := []RoutesConfig{{
-		Path:        "/login",
-		HandlerFunc: controllers.LogiController,
-		Method:      []string{http.MethodGet},
-	}}
-
-	for _, r := range routes {
-		log.Printf("mounting %s - %s", r.Path, r.Method)
-		go router.HandleFunc(
-			r.Path,
-			r.HandlerFunc,
-		).Methods(r.Method...)
+	routes := []RoutesConfig{
+		{
+			Path:        "/login",
+			HandlerFunc: controllers.LogiController,
+			Method:      []string{http.MethodGet},
+		},
 	}
+
+	go func() {
+		for _, r := range routes {
+			log.Printf("mounting %s - %s", r.Path, r.Method)
+			router.HandleFunc(r.Path, r.HandlerFunc).Methods(r.Method...)
+		}
+	}()
 
 	server := &http.Server{
 		Handler:      router,
